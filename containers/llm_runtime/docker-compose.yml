@@ -3,9 +3,9 @@ services:
   llm_runtime:
     build: 
       context: ./
-      dockerfile: ./Dockerfile
+      dockerfile: ./DockerfileCPU
     image:
-      bureaucratschoice/dckr_llm:dev-llm_runtime
+      bureaucratschoice/dckr_llm:dev-llm_runtime_cpu
     environment:
       - MODEL=value
       - HOST=0.0.0.0
