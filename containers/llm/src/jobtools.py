@@ -44,6 +44,15 @@ class ChatJob:
         self.messages.append(self.completion)
         self.completion = ""
 
+    def get_completion(self) -> str:
+        """
+        Retrieves the completion.
+
+        Returns:
+            str: The completion.
+        """
+        return self.completion
+        
     def get_messages(self) -> List[str]:
         """
         Retrieves the list of chat messages.
