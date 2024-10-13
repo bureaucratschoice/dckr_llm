@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile 
+    image: bureaucratschoice/dckr_llm_frontend:0.1
+    environment:
+    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]
+    volumes:
+      - ./static:/app/static
+    ports:
+      - "80:80"
+
+
+
+
+
+

@@ -1,0 +1,10 @@
+FROM bureaucratschoice/dckr_llm_cpu:0.1
+
+
+WORKDIR /app
+ADD ./src/ /app
+
+EXPOSE 80
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"] 
+
