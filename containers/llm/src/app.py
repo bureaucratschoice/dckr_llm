@@ -94,7 +94,7 @@ async def chat(item: Chat) -> Any:
     job = ChatJob(item.sysprompt, item.messages)
     jobReg.add_job(job)
     try:
-        taskQueue.put(job)
+        taskQueue.put(job.get_uuid())
     except queue.Full:
         job.set_status("failed")
     return job.get_uuid()

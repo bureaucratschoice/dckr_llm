@@ -46,6 +46,7 @@ class ModelHandler:
         self.filename = os.getenv('MODEL_BIN_PATH')
         self.gpu_layers = int(os.getenv('GPU_LAYERS', '0'))  # Default to 0 GPU layers
         self.verbose = True  # Always use verbose mode (non-verbose leads to errors)
+        self.n_ctx = int(os.getenv('N_CTX', '0'))
 
         if not self.url or not self.filename:
             raise ValueError("MODEL_DOWNLOAD_URL and MODEL_BIN_PATH must be set.")
@@ -101,7 +102,7 @@ class ModelHandler:
             llm = Llama(
                 model_path=self.filename,
                 verbose=self.verbose,
-                n_ctx=0,
+                n_ctx=self.n_ctx,
                 n_gpu_layers=self.gpu_layers,
                 n_threads=multiprocessing.cpu_count(),
                 n_threads_batch=multiprocessing.cpu_count()
@@ -111,7 +112,8 @@ class ModelHandler:
             llm = Llama(
                 model_path=self.filename,
                 verbose=self.verbose,
-                n_gpu_layers=self.gpu_layers
+                n_gpu_layers=self.gpu_layers,
+                n_ctx=self.n_ctx
             )
 
         print("Llama model initialized successfully.")

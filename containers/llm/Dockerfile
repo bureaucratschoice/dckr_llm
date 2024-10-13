@@ -1,7 +1,7 @@
-FROM bureaucratschoice/dckr_llm:llm_runtime_0.1
+FROM bureaucratschoice/dckr_llm_runtime:0.1
 
-RUN apt-get update
-RUN apt-get upgrade
+RUN apt-get update 
+RUN apt-get upgrade -y
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1

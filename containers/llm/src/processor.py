@@ -44,35 +44,42 @@ class MainProcessor(threading.Thread):
             
             try:
                 # Retrieve the job from the job registry using the UUID
-                job = self.jobReg.getJob(uuid)
-                job.setStatus("processing")
+                job = self.jobReg.get_job(uuid)
+                job.set_status("processing")
 
                 # Initialize the message toggle (alternating between 'user' and 'assistant')
                 toggle = RoleToggle("user", "assistant")
-                messages = [{"role": "system", "content": job.getSysPrompt()}]
+                messages = [{"role": "system", "content": job.get_sys_prompt()}]
 
+                #messages = ["role:system\ncontent:"+str(job.get_sys_prompt())+"\n"]
                 # Append previous messages to the conversation
-                for message in job.getMessages():
+                for message in job.get_messages():
                     messages.append({"role": toggle.toggle(), "content": message})
 
+                #for message in job.get_messages():
+                #    messages.append("role:" +str(toggle.toggle())+ "\ncontent:" +str(message)+"\n")
+                
                 # Stream the response from the LLM
+                print(messages)
+
                 try:
                     completionStream = llm.create_chat_completion(
                         messages, stream=True
                     )
                     for chunk in completionStream:
-                        print(chunk)  # Optional: Replace with logging in production
-                        job.appendChunk(chunk)  # Store streamed chunk in the job
+                        #print(chunk.get('choices')[0])  # Optional: Replace with logging in production
+                        if chunk.get('choices')[0].get('delta').get('content'):
+                            job.append_chunk(chunk.get('choices')[0].get('delta').get('content'))  # Store streamed chunk in the job
 
                 except Exception as e:
                     # Handle LLM errors gracefully by logging and storing an error message
                     print(f"Error during LLM completion: {e}")
                     error_message = os.getenv('CHATERROR', 'An error occurred.')
-                    job.appendChunk(error_message)
+                    job.append_chunk(error_message)
 
                 # Finalize the job by appending the full message and setting status
-                job.appendMessage()  # Verify if parameters are needed
-                job.setStatus("finished")
+                #job.append_message()  # Verify if parameters are needed
+                job.set_status("finished")
 
             finally:
                 # Mark the task as done to avoid deadlocks
