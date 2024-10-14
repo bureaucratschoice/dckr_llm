@@ -1,23 +1,16 @@
 #!/usr/bin/env python3
-
-from typing import List, Tuple, Optional  # UNUSED, consider removing
-
-from nicegui import app, ui, events  # `context` and `Client` UNUSED, remove
-from datetime import datetime  # UNUSED, remove if not needed in future logic
+from nicegui import app, ui, events
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 import os
-import time  # UNUSED, remove if not used later
 from uuid import uuid4
-import json  # UNUSED, remove if JSON parsing is unnecessary
 
 # Importing modules specific to app components
 from home import home
-from navigation import navigation  # UNUSED, remove if not invoked
 from chat import chat
 from management import mngmt
-from pdf import pdf
+from pdf import pdfpage
 from statistics import statistics
 from login import login
 
@@ -78,49 +71,41 @@ class AuthMiddleware(BaseHTTPMiddleware):
 # Add authentication middleware to the app
 app.add_middleware(AuthMiddleware)
 
-def init(fastapi_app: FastAPI, jobStat, taskQueue, cfg, statistic) -> None:
-    """
-    Initializes the app with page routes and runs it using the provided FastAPI app.
+@ui.page('/chat')
+def call_chat():
+    """Handles chat page requests."""
+    chat()
 
-    Args:
-        fastapi_app (FastAPI): The FastAPI app instance.
-        jobStat: Job statistics object.
-        taskQueue: Queue for managing background tasks.
-        cfg: Configuration object.
-        statistic: Statistics object for tracking metrics.
-    """
-    @ui.page('/chat')
-    def call_chat():
-        """Handles chat page requests."""
-        chat()
+@ui.page('/')
+def call_home():
+    """Handles home page requests."""
+    home()
 
-    @ui.page('/')
-    def call_home():
-        """Handles home page requests."""
-        home()
+@ui.page('/management')
+def call_mngmt():
+    """Handles management page requests."""
+    mngmt()
 
-    @ui.page('/management')
-    def call_mngmt():
-        """Handles management page requests."""
-        mngmt()
+@ui.page('/login')
+def call_login():
+    """Handles login page requests."""
+    login()
 
-    @ui.page('/login')
-    def call_login():
-        """Handles login page requests."""
-        login()
+@ui.page('/statistic')
+def call_statistics():
+    """Handles statistics page requests."""
+    statistics()
 
-    @ui.page('/statistic')
-    def call_statistics():
-        """Handles statistics page requests."""
-        statistics()
+@ui.page('/pdf')
+def call_pdf():
+    """Handles PDF page requests."""
+    pdfpage()
 
-    @ui.page('/pdf')
-    def call_pdf():
-        """Handles PDF page requests."""
-        pdf()
+# Expose the FastAPI app so that uvicorn can discover it
+nicegui_app = app
 
-    # Run the app with FastAPI integration
-    ui.run_with(
-        fastapi_app,
+# Only run this when called directly
+if __name__ in {"__main__", "__mp_main__"}:
+    ui.run(
         storage_secret=uuid4(),
     )

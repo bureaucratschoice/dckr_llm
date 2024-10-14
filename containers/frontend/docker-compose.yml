@@ -3,10 +3,9 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile 
+      dockerfile: Dockerfile_Codebase
     image: bureaucratschoice/dckr_llm_frontend:0.1
-    environment:
-    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]
+    command: ["uvicorn", "frontend:nicegui_app", "--host", "0.0.0.0", "--port", "80"]
     volumes:
       - ./static:/app/static
     ports:

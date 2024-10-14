@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 from typing import List, Tuple
 from nicegui import app,context, ui, events
-from helpers.random_words import get_random_word_string
-
 import os
+#from chat import chat
+#from pdf import pdfpage
+
+
 def navigation():
     anchor_style = r'a:link, a:visited {color: inherit !important; text-decoration: none; font-weight: 500}'
     ui.add_head_html(f'<style>{anchor_style}</style>')
@@ -18,7 +20,7 @@ def navigation():
     with ui.left_drawer().classes('bg-blue-100') as left_drawer:
         ui.link("Home",home)
         tochat = os.getenv('TOCHAT',default=cfg.get_config('frontend','to_chat',default="Zum Chat"))
-        ui.link(tochat, show)
+        ui.link(tochat, chat)
         topdf = os.getenv('TOPDF',default=cfg.get_config('frontend','to_pdf',default="Zu den PDF-Werkzeugen"))
         ui.link(topdf, pdfpage)
         

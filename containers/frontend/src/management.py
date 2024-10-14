@@ -1,3 +1,5 @@
+from navigation import navigation 
+
 def mngmt():
         navigation()
         title = os.getenv('APP_TITLE',default=cfg.get_config('frontend','app_title',default="MWICHT"))

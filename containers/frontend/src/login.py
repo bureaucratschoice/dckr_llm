@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from nicegui import app,context, ui, events
-from helpers.random_words import get_random_word_string
+from fastapi.responses import RedirectResponse
+
+
+from navigation import navigation 
 
 def login() -> Optional[RedirectResponse]:
     def try_login() -> None:  # local function to avoid passing username and password as arguments

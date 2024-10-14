@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from typing import List, Tuple
 from nicegui import app,context, ui, events
-from helpers.random_words import get_random_word_string
-
 import os
+
+from navigation import navigation 
 
 def chat():
     assi = os.getenv('ASSISTANT',default=cfg.get_config('frontend','assistant',default="Assistent:in"))
