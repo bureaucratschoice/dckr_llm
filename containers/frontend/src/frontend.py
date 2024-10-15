@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from nicegui import app, ui, events
+from nicegui import app, ui, events, Client
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -71,41 +71,40 @@ class AuthMiddleware(BaseHTTPMiddleware):
 # Add authentication middleware to the app
 app.add_middleware(AuthMiddleware)
 
-@ui.page('/chat')
-def call_chat():
-    """Handles chat page requests."""
-    chat()
+def init(fastapi_app: FastAPI) -> None:
 
-@ui.page('/')
-def call_home():
-    """Handles home page requests."""
-    home()
+    @ui.page('/chat')
+    def call_chat():
+        """Handles chat page requests."""
+        chat()
 
-@ui.page('/management')
-def call_mngmt():
-    """Handles management page requests."""
-    mngmt()
+    @ui.page('/')
+    def call_home():
+        """Handles home page requests."""
+        home()
 
-@ui.page('/login')
-def call_login():
-    """Handles login page requests."""
-    login()
+    @ui.page('/management')
+    def call_mngmt():
+        """Handles management page requests."""
+        mngmt()
 
-@ui.page('/statistic')
-def call_statistics():
-    """Handles statistics page requests."""
-    statistics()
+    @ui.page('/login')
+    def call_login():
+        """Handles login page requests."""
+        login()
 
-@ui.page('/pdf')
-def call_pdf():
-    """Handles PDF page requests."""
-    pdfpage()
+    @ui.page('/statistic')
+    def call_statistics():
+        """Handles statistics page requests."""
+        statistics()
 
-# Expose the FastAPI app so that uvicorn can discover it
-nicegui_app = app
+    @ui.page('/pdf')
+    def call_pdf():
+        """Handles PDF page requests."""
+        pdfpage()
 
-# Only run this when called directly
-if __name__ in {"__main__", "__mp_main__"}:
-    ui.run(
-        storage_secret=uuid4(),
+
+    ui.run_with(
+        fastapi_app,
+        storage_secret = uuid4(),
     )

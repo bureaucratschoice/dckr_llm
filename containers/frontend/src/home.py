@@ -7,8 +7,8 @@ from navigation import navigation
 
 def home():
     navigation()
-    statistic.addEvent('visit')
-    title = os.getenv('APP_TITLE',default=cfg.get_config('frontend','app_title',default="MWICHT"))
+   
+    title = os.getenv('APP_TITLE',default="dckr_llm")
         
     with ui.column().classes('absolute-center'):
         with ui.row():
