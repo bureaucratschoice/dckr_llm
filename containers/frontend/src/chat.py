@@ -4,39 +4,27 @@ from nicegui import app,context, ui, events
 import os
 
 from navigation import navigation 
+from jobtools import ChatJob, RoleToggle
 
 def chat():
-    assi = os.getenv('ASSISTANT',default="Assistent:in")
-    you = os.getenv('YOU',default="Sie")
+    if not 'ChatJob' in app.storage.user:
+        app.storage.user['ChatJob'] = ChatJob(sys_prompt="TEST",messages=[]).to_dict()
+    chat_job = ChatJob.from_dict(app.storage.user['ChatJob']) 
+    if not 'RoleToogle' in app.storage.user:
+        app.storage.user['RoleToogle'] = RoleToggle(assistant=os.getenv('ASSISTANT',default="Assistent:in"),user=os.getenv('YOU',default="Sie")).to_dict()
+    role_toggle = RoleToggle.from_dict(app.storage.user['RoleToogle'])
+
     greeting = os.getenv('GREETING',"Achtung, prüfen Sie jede Antwort bevor Sie diese in irgendeiner Form weiterverwenden. Je länger Ihre Frage ist bzw. je länger der bisherige Chatverlauf, desto länger brauche ich zum lesen. Es kann daher dauern, bis ich anfange Ihre Antwort zu schreiben. Die Länge der Warteschlange ist aktuell:" )
-    pdf_greeting = os.getenv('PDFGREETING',default="Laden Sie ein PDF hoch, damit ich Ihnen Fragen hierzu beantworten kann. Achtung, prüfen Sie jede Antwort bevor Sie diese in irgendeiner Form weiterverwenden. Die Länge der Warteschlange ist aktuell: ")
-    pdf_processed = os.getenv('PDFPROC',default="Ihr PDF wird gerade verarbeitet. Der aktuelle Status ist: ")
-    
-    messages: List[Tuple[str, str]] = [] 
+   
     thinking: bool = False
     timer = ui.timer(1.0, lambda: chat_messages.refresh())
-
+    you = os.getenv('YOU',default="Sie")
     @ui.refreshable
     def chat_messages() -> None:
-
-        messages: List[Tuple[str, str]] = [] 
-        messages.append((assi, greeting + "NOT IMPLEMETEDT"))
-        answers = []
-        questions = []
-        status =  False
-        
-        i_q = 0
-        i_a = 0
-           
-        while i_q < len(questions) and questions[i_q]:
-
-            messages.append((you,questions[i_q]))
-            if i_a < len(answers) and answers[i_q]:
-                messages.append((assi,answers[i_q]))
-            i_q += 1
-            i_a += 1
-        for name, text in messages:
-            ui.chat_message(text=text, name=name, sent=name == you)
+ 
+        for msg in chat_job.get_messages():
+            name = role_toggle.get_acting()
+            ui.chat_message(text=msg, name=name, sent=name == you)
                 
         if 'status' in status:
             if status['status'] == 'processing':
