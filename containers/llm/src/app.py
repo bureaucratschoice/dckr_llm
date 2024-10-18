@@ -59,10 +59,16 @@ async def get_completion(info: InfoRequest) -> Any:
         dict: A dictionary containing the job's completion and status.
     """
     job = jobReg.get_job(info.uuid)
-    return {
+    if job:
+        return {
         "completion": job.get_completion(),
         "status": job.get_status()
-    }
+        }
+    else:
+        return {
+        "completion": "",
+        "status": ""
+        }
 
 
 @app.post("/unregisterJob/")

@@ -14,6 +14,7 @@ from pdf import pdfpage
 from statistics import statistics
 from login import login
 
+
 class InputText:
     """Class to manage user input text."""
     def __init__(self):

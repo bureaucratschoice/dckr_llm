@@ -49,13 +49,15 @@ class ChatJob:
         """
         Creates a ChatJob instance from a dictionary.
         """
-        return cls(
+        result = cls(
             sys_prompt=data["sys_prompt"],
             messages=data["messages"],
-            uuid=data.get("uuid"),
-            status=data.get("status", "created"),
-            completion=data.get("completion", ""),
+            
         )
+        result.uuid =data.get("uuid")
+        result.status = data.get("status", "created")
+        result.completion=data.get("completion", "")
+        return result
 
     def get_completion(self) -> str:
         """
@@ -102,6 +104,14 @@ class ChatJob:
         """
         return self.uuid
 
+    def set_completion(self,completion: str) -> None:
+        """
+        Updates the completion of the chat job.
+
+        Args:
+            completion (str): The new completion to assign to the chat job.
+        """
+        self.completion = completion
     def set_status(self, status: str) -> None:
         """
         Updates the status of the chat job.
