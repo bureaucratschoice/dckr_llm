@@ -23,5 +23,6 @@ def navigation():
         tochat = os.getenv('TOCHAT',default="Zum Chat")
         ui.link(tochat, "/chat")
         topdf = os.getenv('TOPDF',default="Zu den PDF-Werkzeugen")
-        ui.link(topdf, "/pdf")
+        #TODO Support PDF tools
+        #ui.link(topdf, "/pdf") 
         

@@ -9,12 +9,10 @@ from api_calls import ChatClient
 
 def chat():
     sysprompt = "Du bist ein hilfreicher KI-Assistent."
-    if not 'ChatJob' in app.storage.user:
-        app.storage.user['ChatJob'] = ChatJob(sys_prompt="TEST",messages=[]).to_dict()
-    chat_job = ChatJob.from_dict(app.storage.user['ChatJob']) 
-    if not 'RoleToogle' in app.storage.user:
-        app.storage.user['RoleToogle'] = RoleToggle(assistant=os.getenv('ASSISTANT',default="Assistent:in"),user=os.getenv('YOU',default="Sie")).to_dict()
-    role_toggle = RoleToggle.from_dict(app.storage.user['RoleToogle'])
+    if not 'chat_job' in app.storage.user:
+        app.storage.user['chat_job'] = ChatJob(sys_prompt="sysprompt",messages=[]).to_dict()
+
+    
 
     client = ChatClient()
 
@@ -25,61 +23,73 @@ def chat():
     you = os.getenv('YOU',default="Sie")
     @ui.refreshable
     def chat_messages() -> None:
+
+        chat_job = ChatJob.from_dict(app.storage.user['chat_job']) 
+        role_toggle = RoleToggle(assistant=os.getenv('ASSISTANT',default="Assistent:in"),user=os.getenv('YOU',default="Sie"))
         result = client.get_completion(chat_job.get_uuid())
+        #print(result)
         chat_job.set_completion(result['completion'])
         chat_job.set_status(result['status'])
 
         for msg in chat_job.get_messages():
             name = role_toggle.get_acting()
             ui.chat_message(text=msg, name=name, sent=name == you)
-                
+            role_toggle.toggle()    
         name = role_toggle.get_acting()
-        ui.chat_message(text=chat_job.get_completion(), name=name, sent=name == you)
-
+        
+        with ui.chat_message(name=name, sent=name == you):
+            ui.markdown(chat_job.get_completion())
+        #ui.chat_message(text=chat_job.get_completion(), name=name, sent=name == you)
+        #role_toggle.toggle()
         if chat_job.get_status() == 'processing':
             thinking = True
             timer.activate()
                     
         else:
             thinking = False
-            timer.activate()
+            timer.deactivate()
             if chat_job.get_status()== 'finished':
                 chat_job.append_message()
+                client.unregister_job(chat_job.get_uuid())
+                chat_job.set_status('created')
+                print(chat_job.get_status())
                 timer.deactivate()
+                
             
 
         if thinking:
             ui.spinner(size='3rem').classes('self-center')
         #if context.get_client().has_socket_connection:
         #    ui.run_javascript('window.scrollTo(0, document.body.scrollHeight)')
-
+        app.storage.user['chat_job'] = chat_job.to_dict()
         
     #TODO
     def delete_chat() -> None:
-        app.storage.user['input'] = ""
-        app.storage.user['chat_job'] = 0
+        chat_job = ChatJob.from_dict(app.storage.user['chat_job'])
+        client.unregister_job(chat_job.get_uuid())
+        app.storage.user['chat_job'] = ChatJob(sys_prompt="sysprompt",messages=[]).to_dict()
         chat_messages.refresh()
     
     #TODO
     def copy_data():
-
-        if 'answer' in app.storage.user['chat_job']:
-            text = app.storage.user['chat_job']['answer']
+            text = chat_job.get_messages()[-1]
             ui.run_javascript('navigator.clipboard.writeText(`' + text + '`)', timeout=5.0)
-
 
 
     async def send() -> None:
         user_input = app.storage.user['input']
+        chat_job = ChatJob.from_dict(app.storage.user['chat_job'])
         chat_job.append_chunk(user_input)
         chat_job.append_message()
 
         text.value = ''
         app.storage.user['input'] = ''
 
-        uuid = client.send_chat(sysprompt,chat_job.get_messages)
-        chat_job.set_uuid()
-
+        result = client.send_chat(sysprompt,chat_job.get_messages())
+        print(result)
+        chat_job.set_uuid(result.get('uuid'))
+        chat_job.set_status(result.get('status'))
+        app.storage.user['chat_job'] = chat_job.to_dict()
         timer.activate()
         chat_messages.refresh()
             

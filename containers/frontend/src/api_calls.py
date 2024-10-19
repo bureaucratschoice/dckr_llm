@@ -33,7 +33,7 @@ class ChatClient:
         try:
             response = requests.post(url, json=payload)
             response.raise_for_status()
-            return response.text  # Return the job's UUID
+            return response.json()  # Return the job's UUID
         except requests.exceptions.RequestException as e:
             return f"Chat request failed: {e}"
 
@@ -58,3 +58,23 @@ class ChatClient:
             return response.json()  # Return job's status and completion
         except requests.exceptions.RequestException as e:
             return {"error": f"Completion request failed: {e}"}
+
+    def unregister_job(self, uuid: str) -> str:
+        """
+        Unregisters a job using its UUID by calling the /unregisterJob/ endpoint.
+
+        Args:
+            uuid (str): UUID of the job to be unregistered.
+
+        Returns:
+            str: A confirmation message or an error message if the request fails.
+        """
+        url = f"{self.base_url}/unregisterJob/"
+        payload = {"uuid": uuid}
+
+        try:
+            response = requests.post(url, json=payload)
+            response.raise_for_status()
+            return response.text  # Should return "OK" on success
+        except requests.exceptions.RequestException as e:
+            return f"Unregister job request failed: {e}"

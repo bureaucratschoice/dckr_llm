@@ -24,7 +24,7 @@ class ChatJob:
         """
         self.sys_prompt = sys_prompt
         self.messages = messages
-        self.uuid = uuid4().hex
+        self.uuid = str(uuid4().hex)
         self.status = "created"
         self.completion = ""
 

@@ -103,4 +103,7 @@ async def chat(item: Chat) -> Any:
         taskQueue.put(job.get_uuid())
     except queue.Full:
         job.set_status("failed")
-    return job.get_uuid()
+    print(job.get_uuid())
+    return {
+        "uuid": job.get_uuid()
+        }

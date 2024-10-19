@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import uuid4, UUID
 from typing import List, Dict, Optional
 from threading import RLock
 
@@ -24,7 +24,7 @@ class ChatJob:
         """
         self.sys_prompt = sys_prompt
         self.messages = messages
-        self.uuid = uuid4().hex
+        self.uuid = str(uuid4().hex)
         self.status = "created"
         self.completion = ""
 
@@ -54,7 +54,7 @@ class ChatJob:
             messages=data["messages"],
             
         )
-        result.uuid =data.get("uuid")
+        result.uuid = data.get("uuid")
         result.status = data.get("status", "created")
         result.completion=data.get("completion", "")
         return result
@@ -129,6 +129,7 @@ class ChatJob:
             uuid (str): The new uuid to assign to the chat job.
         """
         self.uuid = uuid
+        print(self.uuid)
 
     def to_dict(self) -> dict:
         """
