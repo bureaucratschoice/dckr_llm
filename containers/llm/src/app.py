@@ -44,7 +44,7 @@ async def get_status(info: InfoRequest) -> Any:
     Returns:
         Any: The status of the job.
     """
-    return {"message":jobReg.get_job(info.uuid).get_status()}
+    return {"status":jobReg.get_job(info.uuid).get_status(),"queue_size":taskQueue.qsize()}
 
 
 @app.post("/getCompletion/")
@@ -82,6 +82,7 @@ async def unregister_job(info: InfoRequest) -> Any:
     Returns:
         str: A confirmation message.
     """
+
     jobReg.delete_job(info.uuid)
     return "OK"
 
@@ -103,7 +104,8 @@ async def chat(item: Chat) -> Any:
         taskQueue.put(job.get_uuid())
     except queue.Full:
         job.set_status("failed")
-    print(job.get_uuid())
+    
     return {
-        "uuid": job.get_uuid()
+        "uuid": job.get_uuid(),
+        "status": job.get_status()
         }

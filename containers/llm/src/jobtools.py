@@ -127,8 +127,8 @@ class JobRegister:
         with self.lock:
             try:
                 del self.register[uuid]
-            except KeyError:
-                raise KeyError(f"Job with UUID '{uuid}' does not exist.")
+            except Exception as e:
+                print(e)
 
     def add_job(self, job: 'ChatJob') -> None:
         """

@@ -33,7 +33,7 @@ class ChatClient:
         try:
             response = requests.post(url, json=payload)
             response.raise_for_status()
-            return response.json()  # Return the job's UUID
+            return response.json()  # Return the job's UUID and status
         except requests.exceptions.RequestException as e:
             return f"Chat request failed: {e}"
 
@@ -58,6 +58,27 @@ class ChatClient:
             return response.json()  # Return job's status and completion
         except requests.exceptions.RequestException as e:
             return {"error": f"Completion request failed: {e}"}
+
+    def get_status(self, uuid: str) -> Dict[str, Any]:
+        """
+        Retrieves the status of a job based on its UUID by calling the /getStatus/ endpoint.
+
+        Args:
+            uuid (str): UUID of the job.
+
+        Returns:
+            dict: A dictionary containing the job's status and queue size,
+                  or an error message if the request fails.
+        """
+        url = f"{self.base_url}/getStatus/"
+        payload = {"uuid": uuid}
+
+        try:
+            response = requests.post(url, json=payload)
+            response.raise_for_status()
+            return response.json()  # Return job's status and queue size
+        except requests.exceptions.RequestException as e:
+            return {"error": f"Status request failed: {e}"}
 
     def unregister_job(self, uuid: str) -> str:
         """

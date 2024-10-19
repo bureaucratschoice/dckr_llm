@@ -33,12 +33,14 @@ def chat():
 
         for msg in chat_job.get_messages():
             name = role_toggle.get_acting()
-            ui.chat_message(text=msg, name=name, sent=name == you)
+            with ui.chat_message(name=name, sent=name == you):
+                ui.markdown(msg)
             role_toggle.toggle()    
         name = role_toggle.get_acting()
         
-        with ui.chat_message(name=name, sent=name == you):
-            ui.markdown(chat_job.get_completion())
+        if chat_job.get_completion():
+            with ui.chat_message(name=name, sent=name == you):
+                ui.markdown(chat_job.get_completion())
         #ui.chat_message(text=chat_job.get_completion(), name=name, sent=name == you)
         #role_toggle.toggle()
         if chat_job.get_status() == 'processing':
@@ -47,15 +49,21 @@ def chat():
                     
         else:
             thinking = False
-            timer.deactivate()
+
             if chat_job.get_status()== 'finished':
                 chat_job.append_message()
                 client.unregister_job(chat_job.get_uuid())
                 chat_job.set_status('created')
                 print(chat_job.get_status())
                 timer.deactivate()
-                
-            
+            else:
+                if chat_job.get_status() == 'created':
+                    with ui.chat_message(name=name, sent=name == you):
+                        ui.markdown("Vor deiner Anfrage sind befinden sich noch "+str(client.get_status(chat_job.get_uuid()).get('queue_size'))+"in der **Warteschlange**.")
+                    
+                    timer.activate()    
+                else:
+                    timer.deactivate()
 
         if thinking:
             ui.spinner(size='3rem').classes('self-center')
@@ -63,14 +71,12 @@ def chat():
         #    ui.run_javascript('window.scrollTo(0, document.body.scrollHeight)')
         app.storage.user['chat_job'] = chat_job.to_dict()
         
-    #TODO
     def delete_chat() -> None:
         chat_job = ChatJob.from_dict(app.storage.user['chat_job'])
         client.unregister_job(chat_job.get_uuid())
         app.storage.user['chat_job'] = ChatJob(sys_prompt="sysprompt",messages=[]).to_dict()
         chat_messages.refresh()
     
-    #TODO
     def copy_data():
             text = chat_job.get_messages()[-1]
             ui.run_javascript('navigator.clipboard.writeText(`' + text + '`)', timeout=5.0)
@@ -86,9 +92,13 @@ def chat():
         app.storage.user['input'] = ''
 
         result = client.send_chat(sysprompt,chat_job.get_messages())
-        print(result)
         chat_job.set_uuid(result.get('uuid'))
         chat_job.set_status(result.get('status'))
+
+        if chat_job.get_status() == 'failed':
+            chat_job.append_chunk('failed to register job with llm. Please retry later.')
+            chat_job.append_message()
+            chat_job.set_status('finished')
         app.storage.user['chat_job'] = chat_job.to_dict()
         timer.activate()
         chat_messages.refresh()
