@@ -10,8 +10,8 @@ llm = model_handler.build()
 
 class MainProcessor(threading.Thread):
     """
-    A thread-based class that processes chat jobs from a task queue using an LLM (Large Language Model). 
-    It pulls jobs from the queue, streams responses from the LLM, and updates the job's status and content.
+    A thread-based class that processes jobs (ChatJob or EmbedJob) from a task queue using an LLM. 
+    It pulls jobs from the queue, processes them based on the job type, and updates the job's status and content.
     
     Attributes:
         taskLock (threading.Lock): A lock to ensure thread-safe access to shared resources.
@@ -36,54 +36,97 @@ class MainProcessor(threading.Thread):
     def run(self):
         """
         The main loop of the thread. Continuously pulls jobs from the task queue and processes them.
-        For each job, it streams responses from the LLM and updates the job's status and content.
+        For each job, it determines whether it's a ChatJob or an EmbedJob and processes it accordingly.
         """
         while True:
             # Retrieve a job UUID from the task queue (blocking call)
             uuid = self.taskQueue.get(block=True)
-            
+
             try:
                 # Retrieve the job from the job registry using the UUID
                 job = self.jobReg.get_job(uuid)
-                job.set_status("processing")
-
-                # Initialize the message toggle (alternating between 'user' and 'assistant')
-                toggle = RoleToggle("user", "assistant")
-                messages = [{"role": "system", "content": job.get_sys_prompt()}]
-
-                #messages = ["role:system\ncontent:"+str(job.get_sys_prompt())+"\n"]
-                # Append previous messages to the conversation
-                for message in job.get_messages():
-                    messages.append({"role": toggle.toggle(), "content": message})
-
-                #for message in job.get_messages():
-                #    messages.append("role:" +str(toggle.toggle())+ "\ncontent:" +str(message)+"\n")
                 
-                # Stream the response from the LLM
-                print(messages)
-
-                try:
-                    completionStream = llm.create_chat_completion(
-                        messages, stream=True
-                    )
-                    for chunk in completionStream:
-                        #print(chunk.get('choices')[0])  # Optional: Replace with logging in production
-                        if chunk.get('choices')[0].get('delta').get('content'):
-                            job.append_chunk(chunk.get('choices')[0].get('delta').get('content'))  # Store streamed chunk in the job
-
-                except Exception as e:
-                    # Handle LLM errors gracefully by logging and storing an error message
-                    print(f"Error during LLM completion: {e}")
-                    error_message = os.getenv('CHATERROR', 'An error occurred.')
-                    job.append_chunk(error_message)
-
-                # Finalize the job by appending the full message and setting status
-                #job.append_message()  # Verify if parameters are needed
-                job.set_status("finished")
+                if isinstance(job, ChatJob):
+                    self.process_chat_job(job)
+                elif isinstance(job, EmbedJob):
+                    self.process_embed_job(job)
+                else:
+                    print(f"Unknown job type for UUID: {uuid}")
 
             finally:
                 # Mark the task as done to avoid deadlocks
                 self.taskQueue.task_done()
+
+    def process_chat_job(self, job: ChatJob):
+        """
+        Process a ChatJob by streaming responses from an LLM and updating the job's status and content.
+
+        Args:
+            job (ChatJob): The chat job to process.
+        """
+        job.set_status("processing")
+        toggle = RoleToggle("user", "assistant")
+        messages = [{"role": "system", "content": job.get_sys_prompt()}]
+
+        # Append previous messages to the conversation
+        for message in job.get_messages():
+            messages.append({"role": toggle.toggle(), "content": message})
+
+        try:
+            # Stream the response from the LLM
+            print(messages)
+            completionStream = llm.create_chat_completion(
+                messages, stream=True
+            )
+            for chunk in completionStream:
+                if chunk.get('choices')[0].get('delta').get('content'):
+                    job.append_chunk(chunk.get('choices')[0].get('delta').get('content'))  # Store streamed chunk in the job
+
+        except Exception as e:
+            # Handle LLM errors gracefully by logging and storing an error message
+            print(f"Error during LLM completion: {e}")
+            error_message = os.getenv('CHATERROR', 'An error occurred.')
+            job.append_chunk(error_message)
+
+        # Finalize the job by appending the full message and setting status
+        job.set_status("finished")
+
+    def process_embed_job(self, job: EmbedJob):
+        """
+        Process an EmbedJob by generating an embedding for the text and updating the job's status.
+
+        Args:
+            job (EmbedJob): The embedding job to process.
+        """
+        job.set_status("processing")
+
+        try:
+            # Simulate embedding process (replace with actual embedding logic)
+            print(f"Embedding text: {job.get_text()}")
+            embedding = self.generate_embedding(job.get_text())
+            job.set_embedding(embedding)
+
+        except Exception as e:
+            # Handle embedding errors gracefully by logging and storing an error message
+            print(f"Error during embedding: {e}")
+            job.set_embedding(None)
+
+        # Finalize the job by setting the status to finished
+        job.set_status("finished")
+
+    def generate_embedding(self, text: str) -> List[float]:
+        """
+        A placeholder method for generating embeddings from text. Replace this with actual embedding logic.
+
+        Args:
+            text (str): The text to be embedded.
+
+        Returns:
+            List[float]: A list of floats representing the embedding.
+        """
+        # Placeholder: Convert text to a dummy vector (e.g., character ASCII values).
+        return [float(ord(char)) for char in text]
+
 
 
 # Example usage (assuming taskQueue and jobReg are defined elsewhere):
