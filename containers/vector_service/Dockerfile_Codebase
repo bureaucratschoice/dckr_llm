@@ -1,0 +1,9 @@
+FROM bureaucratschoice/dckr_vector_service:0.1
+
+
+WORKDIR /app
+ADD ./src/ /app
+
+EXPOSE 80
+
+CMD ["uvicorn", "frontend:app", "--host", "0.0.0.0", "--port", "80"] 

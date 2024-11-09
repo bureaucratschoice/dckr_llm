@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  llm:
+    image: qdrant/qdrant
+    volumes:
+      - ./containers/vector_store/storage:/qdrant/storage 
+      - ./containers/vector_store/snapshots:/qdrant/snapshots 
+      - ./containers/vector_store/config/production.yaml:/qdrant/config/production.yaml
+    ports:
+      - "6333:80"
+
+
+
+
+
+

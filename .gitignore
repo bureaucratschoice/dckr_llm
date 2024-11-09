@@ -1,2 +1,5 @@
 /containers/llm/models
 /containers/embedder/models
+/containers/vector_store/config
+/containers/vector_store/snapshots
+/containers/vector_store/storage
