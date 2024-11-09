@@ -28,8 +28,8 @@ def chat():
         role_toggle = RoleToggle(assistant=os.getenv('ASSISTANT',default="Assistent:in"),user=os.getenv('YOU',default="Sie"))
         result = client.get_completion(chat_job.get_uuid())
         #print(result)
-        chat_job.set_completion(result['completion'])
-        chat_job.set_status(result['status'])
+        chat_job.set_completion(result.get('completion'),'')
+        chat_job.set_status(result.get('status',''))
 
         for msg in chat_job.get_messages():
             name = role_toggle.get_acting()
