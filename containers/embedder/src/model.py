@@ -42,14 +42,14 @@ class ModelHandler:
         ValueError:
             If the required environment variables are not set.
         """
-        self.url = os.getenv('MODEL_DOWNLOAD_URL')
-        self.filename = os.getenv('MODEL_BIN_PATH')
+        self.url = os.getenv('EMBEDDING_DOWNLOAD_URL')
+        self.filename = os.getenv('EMBEDDING_MODEL_BIN_PATH')
         self.gpu_layers = int(os.getenv('GPU_LAYERS', '0'))  # Default to 0 GPU layers
         self.verbose = True  # Always use verbose mode (non-verbose leads to errors)
-        self.n_ctx = int(os.getenv('N_CTX', '0'))
+        self.n_ctx = int(os.getenv('EMBED_N_CTX', '0'))
 
         if not self.url or not self.filename:
-            raise ValueError("MODEL_DOWNLOAD_URL and MODEL_BIN_PATH must be set.")
+            raise ValueError("EMBEDDING_DOWNLOAD_URL and EMBEDDING_MODEL_BIN_PATH must be set.")
 
     def download_file(self) -> str:
         """

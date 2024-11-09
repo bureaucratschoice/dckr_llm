@@ -1,7 +1,7 @@
 import os
 import threading  # Import threading for concurrency
 from model import ModelHandler
-from jobtools import EmbedJob, JobRegister
+from jobtools import EmbedJob, JobRegister, List
 
 # Initialize the model handler and load the LLM
 model_handler = ModelHandler()

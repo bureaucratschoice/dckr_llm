@@ -69,12 +69,7 @@ async def get_completion(info: InfoRequest) -> Any:
                 "completion": job.get_completion(),
                 "status": job.get_status()
             }
-        # Check if it's an EmbedJob and return the embedding
-        elif isinstance(job, EmbedJob):
-            return {
-                "embedding": job.get_embedding(),
-                "status": job.get_status()
-            }
+
         else:
             return {
                 "error": "Unknown job type",
@@ -128,26 +123,3 @@ async def chat(item: Chat) -> Any:
         "status": job.get_status()
         }
 
-@app.post("/embed/")
-async def embed_job(item: EmbedRequest) -> Any:
-    """
-    Create an embed job for the given text and add it to the job queue.
-
-    Args:
-        item (EmbedRequest): The request containing the text to be embedded.
-
-    Returns:
-        dict: The UUID and status of the created job.
-    """
-    job = EmbedJob(item.text)
-    jobReg.add_job(job)
-    
-    try:
-        taskQueue.put(job.get_uuid())
-    except queue.Full:
-        job.set_status("failed")
-
-    return {
-        "uuid": job.get_uuid(),
-        "status": job.get_status()
-    }
