@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  llm:
+    build:
+      context: .
+      dockerfile: Dockerfile_Codebase
+    image: bureaucratschoice/dckr_embedder_cpu:0.1
+    environment:
+      MODEL_DOWNLOAD_URL: https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q5_K_L.gguf
+      MODEL_BIN_PATH: /models/Llama-3.2-1B-Instruct-Q5_K_L.gguf
+      N_CTX: 32000
+    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]
+    volumes:
+      - ./models:/models
+    ports:
+      - "80:80"
+
+
+
+
+
+
