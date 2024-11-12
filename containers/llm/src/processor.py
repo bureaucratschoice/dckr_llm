@@ -62,31 +62,33 @@ class MainProcessor(threading.Thread):
         Args:
             job (ChatJob): The chat job to process.
         """
-        job.set_status("processing")
-        toggle = RoleToggle("user", "assistant")
-        messages = [{"role": "system", "content": job.get_sys_prompt()}]
-
-        # Append previous messages to the conversation
-        for message in job.get_messages():
-            messages.append({"role": toggle.toggle(), "content": message})
-
         try:
-            # Stream the response from the LLM
-            print(messages)
-            completionStream = llm.create_chat_completion(
-                messages, stream=True
-            )
-            for chunk in completionStream:
-                if chunk.get('choices')[0].get('delta').get('content'):
-                    job.append_chunk(chunk.get('choices')[0].get('delta').get('content'))  # Store streamed chunk in the job
+            job.set_status("processing")
+            toggle = RoleToggle("user", "assistant")
+            messages = [{"role": "system", "content": job.get_sys_prompt()}]
 
+            # Append previous messages to the conversation
+            for message in job.get_messages():
+                messages.append({"role": toggle.toggle(), "content": message})
+
+            try:
+                # Stream the response from the LLM
+                print(messages)
+                completionStream = llm.create_chat_completion(
+                    messages, stream=True
+                )
+                for chunk in completionStream:
+                    if chunk.get('choices')[0].get('delta').get('content'):
+                        job.append_chunk(chunk.get('choices')[0].get('delta').get('content'))  # Store streamed chunk in the job
+
+            except Exception as e:
+                # Handle LLM errors gracefully by logging and storing an error message
+                print(f"Error during LLM completion: {e}")
+                error_message = os.getenv('CHATERROR', 'An error occurred.')
+                job.append_chunk(error_message)
+
+            # Finalize the job by appending the full message and setting status
+            job.set_status("finished")
         except Exception as e:
-            # Handle LLM errors gracefully by logging and storing an error message
-            print(f"Error during LLM completion: {e}")
-            error_message = os.getenv('CHATERROR', 'An error occurred.')
-            job.append_chunk(error_message)
-
-        # Finalize the job by appending the full message and setting status
-        job.set_status("finished")
-
+            print(f"Error during ChatJob processing: {e}")
     

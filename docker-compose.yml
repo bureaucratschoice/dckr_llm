@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   llm:
-    image: bureaucratschoice/dckr_llm_cpu:0.1
+    image: bureaucratschoice/dckr_llm_cpu:0.1.1
     environment:
       MODEL_DOWNLOAD_URL: https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf
       MODEL_BIN_PATH: /models/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf
@@ -9,18 +9,20 @@ services:
     command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]
     volumes:
       - ./containers/llm/models:/models
-  embedder:
-    image: bureaucratschoice/dckr_embedder_cpu:0.1
-    environment:
-      EMBEDDING_DOWNLOAD_URL: https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q5_K_L.gguf
-      EMBEDDING_MODEL_BIN_PATH: /models/Llama-3.2-1B-Instruct-Q5_K_L.gguf
-      EMBED_N_CTX: 1000
-    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]
-    volumes:
-      - ./containers/embedder/models:/models    
+  #embedder:
+  #  image: bureaucratschoice/dckr_embedder_cpu:0.1
+  #  environment:
+  #    EMBEDDING_DOWNLOAD_URL: https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q5_K_L.gguf
+  #    EMBEDDING_MODEL_BIN_PATH: /models/Llama-3.2-1B-Instruct-Q5_K_L.gguf
+  #    EMBED_N_CTX: 1000
+  #  command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]
+  #  volumes:
+  #    - ./containers/embedder/models:/models    
   frontend:
-    image: bureaucratschoice/dckr_llm_frontend:0.1
+    image: bureaucratschoice/dckr_llm_frontend:0.1.1
     command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]
+    environment:
+      - SUPERTOKEN=PLEASE_CHANGE_THIS
     volumes:
       - ./containers/frontend/static:/app/static
     ports:

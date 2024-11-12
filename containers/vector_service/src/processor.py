@@ -1,16 +1,14 @@
 import threading
 import queue
-from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct, Filter
-from typing import Union, Any
-from jobtools import VectorJob, JobRegister
 import uuid
-import numpy as np
+from qdrant_client import QdrantClient
+from typing import Any
+from jobtools import VectorJob, JobRegister
 
 class MainProcessor(threading.Thread):
     """
     A background processor thread to handle tasks asynchronously,
-    specifically for processing VectorJob instances with QdrantClient.
+    specifically for processing VectorJob instances with QdrantClient and FastEmbed.
     """
 
     def __init__(self, task_lock: threading.Lock, task_queue: queue.Queue, job_register: JobRegister):
@@ -27,8 +25,8 @@ class MainProcessor(threading.Thread):
         self.task_queue = task_queue
         self.job_register = job_register
 
-        # Initialize Qdrant client (assuming Qdrant is running locally on default port)
-        self.qdrant_client = QdrantClient(url="http://localhost:6333")
+        # Initialize Qdrant client with FastEmbed
+        self.qdrant_client = QdrantClient("localhost", port=6333)
 
     def run(self):
         """
@@ -54,35 +52,35 @@ class MainProcessor(threading.Thread):
             job (VectorJob): The vector job for uploading files and metadata.
         """
         collection_name = job.get_collection()
-        # Check if the collection exists, if not, create it
+
+        # Check if the collection exists; create if it does not
         if not self.qdrant_client.get_collection(collection_name):
             self.qdrant_client.create_collection(
                 collection_name=collection_name,
-                vector_size=512,  # Adjust the vector size based on your embedding model
-                distance="Cosine"  # or "Dot" or "Euclidean" based on your needs
+                vector_size=384,  # Adjust vector size if changing the model
+                distance="Cosine"  # Default distance metric
             )
 
-        # Generate embeddings for each file and insert as points
-        embeddings = self.generate_embeddings(job.get_files())
-        points = [
-            PointStruct(
-                id=str(uuid.uuid4()),  # Generate unique ID for each point
-                vector=embedding,
-                payload={
-                    "source": job.get_metadata().get("source"),
-                    "author": job.get_metadata().get("author"),
-                    "content": file_content
-                }
-            ) for embedding, file_content in zip(embeddings, job.get_files())
+        # Retrieve documents as byte content and metadata
+        documents = job.get_files()  # List of binary content (bytes)
+        decoded_documents = [content.decode("utf-8", errors="ignore") for content in documents]  # Decode bytes to text
+        metadata = [
+            {
+                "source": job.get_metadata().get("source"),
+                "author": job.get_metadata().get("author")
+            } for _ in documents
         ]
+        ids = [str(uuid.uuid4()) for _ in documents]  # Unique IDs for each document
 
-        # Upload points to the collection
-        self.qdrant_client.upsert(
+        # Use Qdrant's `add` method to handle embedding and storage
+        self.qdrant_client.add(
             collection_name=collection_name,
-            points=points
+            documents=decoded_documents,
+            metadata=metadata,
+            ids=ids
         )
 
-        job.set_result({"message": "Files uploaded successfully", "points_count": len(points)})
+        job.set_result({"message": "Files uploaded successfully", "points_count": len(documents)})
 
     def process_query(self, job: VectorJob) -> None:
         """
@@ -92,17 +90,17 @@ class MainProcessor(threading.Thread):
             job (VectorJob): The vector job for querying the vector store.
         """
         collection_name = job.get_collection()
-        query_embedding = self.generate_embedding(job.get_query())
+        query_text = job.get_query()
 
-        # Perform the search query in Qdrant
-        search_result = self.qdrant_client.search(
+        # Perform the search query using Qdrant's `query` method
+        search_result = self.qdrant_client.query(
             collection_name=collection_name,
-            query_vector=query_embedding,
-            limit=5,  # Adjust the number of results as needed
+            query_text=query_text,
+            limit=5,  # Number of results to retrieve
             with_payload=True
         )
 
-        # Format results
+        # Format the search results
         result_data = [
             {
                 "score": point.score,
@@ -111,29 +109,3 @@ class MainProcessor(threading.Thread):
         ]
 
         job.set_result(result_data)
-
-    def generate_embeddings(self, texts: list) -> list:
-        """
-        Generate embeddings for a list of texts. Placeholder for actual embedding generation.
-
-        Args:
-            texts (list): A list of text strings.
-
-        Returns:
-            list: A list of embeddings.
-        """
-        # Replace this with your actual embedding generation logic, e.g., using a transformer model.
-        return [np.random.rand(512).tolist() for _ in texts]
-
-    def generate_embedding(self, text: str) -> list:
-        """
-        Generate an embedding for a single text. Placeholder for actual embedding generation.
-
-        Args:
-            text (str): A text string.
-
-        Returns:
-            list: The generated embedding.
-        """
-        # Replace this with actual embedding generation logic.
-        return np.random.rand(512).tolist()

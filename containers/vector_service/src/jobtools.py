@@ -1,13 +1,12 @@
+from typing import Optional, List, Dict, Union
 from uuid import uuid4
-from typing import List, Dict, Optional, Union
-
 
 class VectorJob:
     """
     A class to manage vector-related tasks, such as uploading files with metadata or querying a vector store.
 
     Attributes:
-        files (Optional[List[str]]): The list of file contents to be uploaded.
+        files (Optional[List[bytes]]): The list of file contents in binary format to be uploaded.
         metadata (Optional[Dict[str, str]]): Metadata associated with the files (e.g., source, author).
         query (Optional[str]): The query string for searching the vector store.
         collection (str): The name of the vector store collection.
@@ -17,19 +16,19 @@ class VectorJob:
         result (Optional[Union[Dict, List[float]]]): The result of the task, such as query results or confirmation of upload.
     """
 
-    def __init__(self, files: Optional[List[str]] = None, metadata: Optional[Dict[str, str]] = None,
+    def __init__(self, files: Optional[List[bytes]] = None, metadata: Optional[Dict[str, str]] = None,
                  query: Optional[str] = None, collection: str = "", task_type: str = "upload"):
         """
         Initializes a VectorJob instance for either file upload or query.
 
         Args:
-            files (Optional[List[str]]): List of file contents to upload.
+            files (Optional[List[bytes]]): List of file contents in binary format to upload.
             metadata (Optional[Dict[str, str]]): Metadata for the files.
             query (Optional[str]): Query string for searching.
             collection (str): The vector store collection name.
             task_type (str): The task type, either 'upload' or 'query'.
         """
-        self.files = files
+        self.files = files  # Stores files as binary data (bytes)
         self.metadata = metadata
         self.query = query
         self.collection = collection
@@ -56,12 +55,12 @@ class VectorJob:
         """
         return self.result
 
-    def get_files(self) -> Optional[List[str]]:
+    def get_files(self) -> Optional[List[bytes]]:
         """
         Retrieves the files to be uploaded.
 
         Returns:
-            Optional[List[str]]: The list of files, or None if this is a query task.
+            Optional[List[bytes]]: The list of files in binary format, or None if this is a query task.
         """
         return self.files
 
@@ -127,6 +126,7 @@ class VectorJob:
             status (str): The new status to assign to the job.
         """
         self.status = status
+
 
 class JobRegister:
     """

@@ -1,6 +1,9 @@
 from uuid import uuid4, UUID
 from typing import List, Dict, Optional
 from threading import RLock
+import pickle
+import os
+from datetime import date
 
 class ChatJob:
     """
@@ -129,7 +132,7 @@ class ChatJob:
             uuid (str): The new uuid to assign to the chat job.
         """
         self.uuid = uuid
-        print(self.uuid)
+        #print(self.uuid)
 
     def to_dict(self) -> dict:
         """
@@ -292,3 +295,98 @@ class RoleToggle:
         self._acting = self.assistant if self._acting == self.user else self.user
         return previous_role
 
+
+
+class Statistic:
+    def __init__(self, filepath="/app/static/statistic.pickle"):
+        """
+        Initialize the Statistic class and load existing statistics from a file if available.
+        
+        :param filepath: The path to the file where statistics are saved.
+        """
+        self.filepath = filepath
+        self.stat = {
+            'visit': {'dates': [], 'values': []},
+            'chat': {'dates': [], 'values': []},
+            'pdf_question': {'dates': [], 'values': []},
+            'pdf_summary': {'dates': [], 'values': []},
+            'max_queue': {'dates': [], 'values': []}
+        }
+        self.load()
+
+    def load(self):
+        """Load statistics from the pickle file."""
+        if os.path.exists(self.filepath):
+            try:
+                with open(self.filepath, "rb") as file:
+                    self.stat = pickle.load(file)
+            except (OSError, IOError, pickle.PickleError) as e:
+                print(f"Error loading statistics: {e}")
+                self.reset_stats()
+
+    def dump_stat(self):
+        """Save statistics to the pickle file."""
+        try:
+            with open(self.filepath, "wb") as file:
+                pickle.dump(self.stat, file)
+        except (OSError, IOError, pickle.PickleError) as e:
+            print(f"Error saving statistics: {e}")
+
+    def reset_stats(self):
+        """Reset statistics to default values."""
+        self.stat = {
+            'visit': {'dates': [], 'values': []},
+            'chat': {'dates': [], 'values': []},
+            'pdf_question': {'dates': [], 'values': []},
+            'pdf_summary': {'dates': [], 'values': []},
+            'max_queue': {'dates': [], 'values': []}
+        }
+        self.dump_stat()
+
+    def update_queue_size(self, size, event='max_queue'):
+        """
+        Update the queue size for a given event.
+
+        :param size: The queue size to be updated.
+        :param event: The event name.
+        """
+        if event in self.stat:
+            today = date.today()
+            if self.stat[event]['dates'] and self.stat[event]['dates'][-1] == today:
+                self.stat[event]['values'][-1] = max(self.stat[event]['values'][-1], size)
+            else:
+                self.stat[event]['dates'].append(today)
+                self.stat[event]['values'].append(size)
+            self.dump_stat()
+        else:
+            print(f"Event '{event}' not found in statistics.")
+
+    def add_event(self, event):
+        """
+        Increment the count for a given event.
+
+        :param event: The event name to be updated.
+        """
+        today = date.today()
+        if event in self.stat:
+            if self.stat[event]['dates'] and self.stat[event]['dates'][-1] == today:
+                self.stat[event]['values'][-1] += 1
+            else:
+                self.stat[event]['dates'].append(today)
+                self.stat[event]['values'].append(1)
+            self.dump_stat()
+        else:
+            print(f"Event '{event}' not found in statistics.")
+
+    def get_event_stat(self, event):
+        """
+        Retrieve the statistics for a given event.
+
+        :param event: The event name.
+        :return: A tuple containing dates and values lists.
+        """
+        if event in self.stat:
+            return self.stat[event].get('dates', []), self.stat[event].get('values', [])
+        else:
+            print(f"Event '{event}' not found in statistics.")
+            return [date.today()], [0]

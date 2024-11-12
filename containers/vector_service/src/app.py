@@ -1,11 +1,12 @@
 import os
 import threading
 import queue
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form
 from pydantic import BaseModel
 from typing import Any, List, Optional
 from processor import MainProcessor
 from jobtools import JobRegister, VectorJob
+from datetime import date
 
 # Fetch the supertoken from environment variables
 supertoken = os.getenv('SUPERTOKEN', default="PLEASE_CHANGE_THIS_PLEASE")
@@ -22,41 +23,54 @@ thread.start()
 # Initialize FastAPI app
 app = FastAPI()
 
-# Define models for file upload and query requests
+# Define models for metadata and request structures
 class FileMetadata(BaseModel):
-    source: str
+    source: Optional[str] = None
     author: Optional[str] = None
-
-class UploadFilesRequest(BaseModel):
-    files: List[str]  # Assuming file contents are provided as strings
-    metadata: FileMetadata
-    collection: str  # Name of the vector collection
+    title: Optional[str] = None
+    date: Optional[date] = None
 
 class QueryRequest(BaseModel):
     query: str
     collection: str
+    metadata: Optional[FileMetadata] = None
 
 class InfoRequest(BaseModel):
     uuid: str
 
 @app.post("/uploadFiles/")
-async def upload_files(request: UploadFilesRequest) -> Any:
+async def upload_files(
+    files: List[UploadFile] = File(...),
+    metadata: str = Form(...),  # Expect metadata as JSON string
+    collection: str = Form(...)
+) -> Any:
     """
     Upload a list of files to a vector store collection.
 
     Args:
-        request (UploadFilesRequest): Contains the files, metadata, and collection name.
+        files (List[UploadFile]): List of uploaded files.
+        metadata (str): JSON string of metadata information.
+        collection (str): Name of the vector collection.
 
     Returns:
         dict: The UUID of the created job.
     """
-    if jobReg.collection_exists(request.collection):
-        return HTTPException(status_code=400, detail="Collection already exists.")
+    # Parse the metadata JSON string
+    try:
+        metadata_obj = FileMetadata.parse_raw(metadata)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid metadata format")
+
+    if jobReg.collection_exists(collection):
+        raise HTTPException(status_code=400, detail="Collection already exists.")
+
+    # Process file contents as bytes
+    file_contents = [await file.read() for file in files]
 
     job = VectorJob(
-        files=request.files,
-        metadata=request.metadata.dict(),
-        collection=request.collection,
+        files=file_contents,
+        metadata=metadata_obj.dict(),
+        collection=collection,
         task_type="upload"
     )
     jobReg.add_job(job)

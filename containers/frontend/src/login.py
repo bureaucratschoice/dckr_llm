@@ -2,10 +2,10 @@
 from typing import List, Tuple, Optional
 from nicegui import app,context, ui, events
 from fastapi.responses import RedirectResponse
-
+import os
 
 from navigation import navigation 
-
+passwords = {'mngmt': os.getenv('SUPERTOKEN', default="PLEASE_CHANGE_THIS_PLEASE")}
 def login() -> Optional[RedirectResponse]:
     def try_login() -> None:  # local function to avoid passing username and password as arguments
         if passwords.get(username.value) == password.value:

@@ -4,7 +4,8 @@ from nicegui import app,context, ui, events
 import os
 
 from navigation import navigation 
-from jobtools import ChatJob, RoleToggle
+from jobtools import ChatJob, RoleToggle, Statistic
+statistic = Statistic()
 from api_calls import ChatClient
 
 def chat():
@@ -28,7 +29,7 @@ def chat():
         role_toggle = RoleToggle(assistant=os.getenv('ASSISTANT',default="Assistent:in"),user=os.getenv('YOU',default="Sie"))
         result = client.get_completion(chat_job.get_uuid())
         #print(result)
-        chat_job.set_completion(result.get('completion'),'')
+        chat_job.set_completion(result.get('completion',''))
         chat_job.set_status(result.get('status',''))
 
         for msg in chat_job.get_messages():
@@ -54,7 +55,7 @@ def chat():
                 chat_job.append_message()
                 client.unregister_job(chat_job.get_uuid())
                 chat_job.set_status('created')
-                print(chat_job.get_status())
+                #print(chat_job.get_status())
                 timer.deactivate()
             else:
                 if chat_job.get_status() == 'created':
@@ -78,8 +79,9 @@ def chat():
         chat_messages.refresh()
     
     def copy_data():
-            text = chat_job.get_messages()[-1]
-            ui.run_javascript('navigator.clipboard.writeText(`' + text + '`)', timeout=5.0)
+        chat_job = ChatJob.from_dict(app.storage.user['chat_job'])
+        text = chat_job.get_messages()[-1]
+        ui.run_javascript('navigator.clipboard.writeText(`' + text + '`)', timeout=5.0)
 
 
     async def send() -> None:
@@ -92,14 +94,15 @@ def chat():
         app.storage.user['input'] = ''
 
         result = client.send_chat(sysprompt,chat_job.get_messages())
-        chat_job.set_uuid(result.get('uuid'))
-        chat_job.set_status(result.get('status'))
+        chat_job.set_uuid(result.get('uuid',''))
+        chat_job.set_status(result.get('status',''))
 
         if chat_job.get_status() == 'failed':
             chat_job.append_chunk('failed to register job with llm. Please retry later.')
             chat_job.append_message()
             chat_job.set_status('finished')
         app.storage.user['chat_job'] = chat_job.to_dict()
+        statistic.add_event('chat')
         timer.activate()
         chat_messages.refresh()
             
