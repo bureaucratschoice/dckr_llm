@@ -1,9 +1,16 @@
 import threading
 import queue
 import uuid
+import magic  # python-magic for MIME type detection
+import fitz  # PyMuPDF for PDF processing
+from docx import Document
+from openpyxl import load_workbook
+from pptx import Presentation
+from bs4 import BeautifulSoup
 from qdrant_client import QdrantClient
-from typing import Any
+from typing import Any, List
 from jobtools import VectorJob, JobRegister
+import io
 
 class MainProcessor(threading.Thread):
     """
@@ -27,6 +34,9 @@ class MainProcessor(threading.Thread):
 
         # Initialize Qdrant client with FastEmbed
         self.qdrant_client = QdrantClient("localhost", port=6333)
+
+        # Initialize the python-magic MIME type detector
+        self.mime = magic.Magic(mime=True)
 
     def run(self):
         """
@@ -52,32 +62,27 @@ class MainProcessor(threading.Thread):
             job (VectorJob): The vector job for uploading files and metadata.
         """
         collection_name = job.get_collection()
-
-        # Check if the collection exists; create if it does not
-        if not self.qdrant_client.get_collection(collection_name):
-            self.qdrant_client.create_collection(
-                collection_name=collection_name,
-                vector_size=384,  # Adjust vector size if changing the model
-                distance="Cosine"  # Default distance metric
-            )
-
+        
         # Retrieve documents as byte content and metadata
         documents = job.get_files()  # List of binary content (bytes)
-        decoded_documents = [content.decode("utf-8", errors="ignore") for content in documents]  # Decode bytes to text
         metadata = [
             {
                 "source": job.get_metadata().get("source"),
                 "author": job.get_metadata().get("author")
             } for _ in documents
         ]
-        ids = [str(uuid.uuid4()) for _ in documents]  # Unique IDs for each document
+       
+        # Extract text content based on file type using python-magic
+        decoded_documents = [
+            self.extract_text_from_file(content) for content in documents
+        ]
 
         # Use Qdrant's `add` method to handle embedding and storage
         self.qdrant_client.add(
             collection_name=collection_name,
             documents=decoded_documents,
-            metadata=metadata,
-            ids=ids
+            metadata=metadata
+
         )
 
         job.set_result({"message": "Files uploaded successfully", "points_count": len(documents)})
@@ -109,3 +114,66 @@ class MainProcessor(threading.Thread):
         ]
 
         job.set_result(result_data)
+
+    def extract_text_from_file(self, file_content: bytes) -> str:
+        """
+        Extracts text from various file types, including PDF, DOCX, XLSX, PPTX, HTML, and default text files.
+
+        Args:
+            file_content (bytes): Binary content of the file.
+
+        Returns:
+            str: Extracted text content.
+        """
+        # Determine MIME type of the file using python-magic
+        mime_type = self.mime.from_buffer(file_content)
+
+        if mime_type == "application/pdf":
+            return self.extract_text_from_pdf(file_content)
+        elif mime_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            return self.extract_text_from_docx(file_content)
+        elif mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+            return self.extract_text_from_xlsx(file_content)
+        elif mime_type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+            return self.extract_text_from_pptx(file_content)
+        elif mime_type == "text/html":
+            return self.extract_text_from_html(file_content)
+        else:
+            return file_content.decode("utf-8", errors="ignore")
+
+    def extract_text_from_pdf(self, file_content: bytes) -> str:
+        pdf_text = ""
+        pdf = fitz.open(stream=file_content, filetype="pdf")
+        for page in pdf:
+            pdf_text += page.get_text()
+        pdf.close()
+        return pdf_text
+
+    def extract_text_from_docx(self, file_content: bytes) -> str:
+        text = ""
+        docx = Document(io.BytesIO(file_content))
+        for para in docx.paragraphs:
+            text += para.text + "\n"
+        return text
+
+    def extract_text_from_xlsx(self, file_content: bytes) -> str:
+        text = ""
+        workbook = load_workbook(io.BytesIO(file_content), data_only=True)
+        for sheet in workbook:
+            for row in sheet.iter_rows(values_only=True):
+                row_text = " ".join([str(cell) if cell else "" for cell in row])
+                text += row_text + "\n"
+        return text
+
+    def extract_text_from_pptx(self, file_content: bytes) -> str:
+        text = ""
+        ppt = Presentation(io.BytesIO(file_content))
+        for slide in ppt.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "text"):
+                    text += shape.text + "\n"
+        return text
+
+    def extract_text_from_html(self, file_content: bytes) -> str:
+        soup = BeautifulSoup(file_content, "html.parser")
+        return soup.get_text()

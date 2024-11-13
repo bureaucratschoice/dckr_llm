@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile_Codebase
-    image: bureaucratschoice/dckr_llm_frontend:0.1.1
+    image: bureaucratschoice/dckr_llm_frontend:0.1.2
     command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "80"]
     volumes:
       - ./static:/app/static

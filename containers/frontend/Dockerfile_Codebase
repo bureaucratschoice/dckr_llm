@@ -1,4 +1,4 @@
-FROM bureaucratschoice/dckr_llm_frontend:0.1
+FROM bureaucratschoice/dckr_llm_frontend:0.1.1
 
 
 WORKDIR /app

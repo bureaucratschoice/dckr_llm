@@ -5,7 +5,7 @@ services:
       context: ./
       dockerfile: ./Dockerfile
     image:
-      bureaucratschoice/dckr_llm_runtime:0.1 
+      bureaucratschoice/dckr_llm_runtime:0.1.2 
     environment:
       - MODEL=value
       - HOST=0.0.0.0
