@@ -10,6 +10,7 @@ RUN apt-get update \
         wget \
         openssh-server \
         nano \
+        libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

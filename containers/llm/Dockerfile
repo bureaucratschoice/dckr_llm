@@ -1,4 +1,5 @@
 FROM bureaucratschoice/dckr_llm_runtime:0.1
+#FROM bureaucratschoice/docker_llm_runtime_arm64:0.1.2
 
 RUN apt-get update 
 RUN apt-get upgrade -y

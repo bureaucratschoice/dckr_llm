@@ -2,7 +2,7 @@ fastapi
 uvicorn
 requests
 qdrant-client[fastembed]
-python-magic  
+python-magic
 fitz  
 docx 
 openpyxl
